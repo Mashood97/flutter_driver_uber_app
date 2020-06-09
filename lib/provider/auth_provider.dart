@@ -26,9 +26,9 @@ class User {
 enum authProblems { UserNotFound, PasswordNotValid, NetworkError }
 
 class AuthProvider with ChangeNotifier {
-  List<User> _usersList;
-  final  _auth = FirebaseAuth.instance;
-  final  _firestore = Firestore.instance;
+  List<User> _usersList = [];
+  final _auth = FirebaseAuth.instance;
+  final _firestore = Firestore.instance;
   FirebaseUser _user;
   SecureStorage _secureStorage = SecureStorage();
   List _list;
@@ -42,11 +42,17 @@ class AuthProvider with ChangeNotifier {
   List<User> get userList => [..._usersList];
 
   bool get getAuthLogin => _userid != null;
+
   String get getUserid => _userid;
+
   String get getemail => _email;
+
   String get getUserName => _username;
+
   String get getCityName => _cityName;
+
   String get getPhoneNumber => _phonenumber;
+
   //getter length
   int get userListLength => _usersList.length;
 
@@ -58,47 +64,52 @@ class AuthProvider with ChangeNotifier {
 
       _user = result.user;
 
-      String getPassword = _secureStorage.encrypt(password);
-      
-      await _firestore.collection('RegisteredDriver').add({
-        'uid': _user.uid,
-        'username': name,
-        'email': email,
-        'phoneNo': phoneNumber,
-        'cityname': cityName,
-        'password': getPassword,
-      });
+      if (_user != null) {
+        String getPassword = _secureStorage.encrypt(password);
 
-      _usersList.add(User(
-          email: email,
-          phonenumber: phoneNumber,
-          userid: _user.uid,
-          username: name,
-          cityName: cityName));
+        await _firestore.collection('RegisteredDriver').add({
+          'uid': _user.uid,
+          'username': name,
+          'email': email,
+          'phoneNo': phoneNumber,
+          'cityname': cityName,
+          'password': getPassword,
+        });
+        _usersList.add(
+          User(
+            email: email,
+            phonenumber: phoneNumber,
+            userid: _user.uid,
+            username: name,
+            cityName: cityName,
+          ),
+        );
 
-      _userid = _user.uid;
-      _username = name;
-      _phonenumber = phoneNumber;
-      _email = email;
-      _cityName = cityName;
-      notifyListeners();
-      final userData = json.encode({
-        'userId': _user.uid,
-        'name': name,
-        'email': email,
-        'phoneNo': phoneNumber,
-        'password': getPassword,
-        'cityName': cityName
-      });
-      notifyListeners();
-      await SharedPref.init();
-      await SharedPref.setAuthdata(userData);
+        _userid = _user.uid;
+        _username = name;
+        _phonenumber = phoneNumber;
+        _email = email;
+        _cityName = cityName;
+        notifyListeners();
+        final userData = json.encode({
+          'userId': _user.uid,
+          'name': name,
+          'email': email,
+          'phoneNo': phoneNumber,
+          'password': getPassword,
+          'cityName': cityName
+        });
+        notifyListeners();
+        await SharedPref.init();
+        await SharedPref.setAuthdata(userData);
+      }
     } catch (e) {
       throw HttpException(e.toString());
     }
   }
 
   var _userData;
+
   Future<void> signInUser(String email, String password) async {
     try {
       AuthResult result = await _auth.signInWithEmailAndPassword(
