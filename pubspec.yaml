@@ -33,6 +33,12 @@ dependencies:
   cloud_firestore:
   firebase_auth: ^0.16.1
   provider: '^3.0.0'
+  google_maps_flutter:
+  http:
+  google_maps_webservice:
+  geolocator:
+  flutter_spinkit:
+  firebase_messaging: ^6.0.16
 
 dev_dependencies:
   flutter_test:

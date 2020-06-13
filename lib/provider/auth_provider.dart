@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_driver_uber_app/utils/flutter_secure_storage.dart';
 import 'package:flutter_driver_uber_app/utils/http_exception.dart';
@@ -37,6 +38,10 @@ class AuthProvider with ChangeNotifier {
   String _phonenumber;
   String _email;
   String _cityName;
+  bool _isActive = false;
+
+  final _firebaseMessaging = FirebaseMessaging();
+  String _firebaseToken;
 
   //getters
   List<User> get userList => [..._usersList];
@@ -47,9 +52,13 @@ class AuthProvider with ChangeNotifier {
 
   String get getemail => _email;
 
+  String get getFCMToken => _firebaseToken;
+
   String get getUserName => _username;
 
   String get getCityName => _cityName;
+
+  bool get getIsActive => _isActive;
 
   String get getPhoneNumber => _phonenumber;
 
@@ -67,39 +76,47 @@ class AuthProvider with ChangeNotifier {
       if (_user != null) {
         String getPassword = _secureStorage.encrypt(password);
 
-        await _firestore.collection('RegisteredDriver').add({
-          'uid': _user.uid,
-          'username': name,
-          'email': email,
-          'phoneNo': phoneNumber,
-          'cityname': cityName,
-          'password': getPassword,
-        });
-        _usersList.add(
-          User(
-            email: email,
-            phonenumber: phoneNumber,
-            userid: _user.uid,
-            username: name,
-            cityName: cityName,
-          ),
-        );
+        await _firebaseMessaging.getToken().then((token) {
+          _firebaseToken = token;
+        }).then((value) {
+          _firestore.collection('RegisteredDriver').add({
+            'uid': _user.uid,
+            'username': name,
+            'email': email,
+            'phoneNo': phoneNumber,
+            'cityname': cityName,
+            'password': getPassword,
+            'fcmToken': _firebaseToken,
+            'isActive': _isActive,
+          });
+          _usersList.add(
+            User(
+              email: email,
+              phonenumber: phoneNumber,
+              userid: _user.uid,
+              username: name,
+              cityName: cityName,
+            ),
+          );
 
-        _userid = _user.uid;
-        _username = name;
-        _phonenumber = phoneNumber;
-        _email = email;
-        _cityName = cityName;
+          _userid = _user.uid;
+          _username = name;
+          _phonenumber = phoneNumber;
+          _email = email;
+          _cityName = cityName;
+        });
         notifyListeners();
+
         final userData = json.encode({
           'userId': _user.uid,
           'name': name,
           'email': email,
           'phoneNo': phoneNumber,
           'password': getPassword,
-          'cityName': cityName
+          'cityName': cityName,
+          'fcmToken': _firebaseToken,
+          'isActive': _isActive,
         });
-        notifyListeners();
         await SharedPref.init();
         await SharedPref.setAuthdata(userData);
       }
@@ -126,7 +143,10 @@ class AuthProvider with ChangeNotifier {
                 _phonenumber = element.data['phoneNo'];
                 _email = email;
                 _cityName = element.data['cityname'];
+                _firebaseToken = element.data['fcmToken'];
+                _isActive = element.data['isActive'];
 
+                ///          'fcmToken': _firebaseToken
                 print("${element.data['uid']} USER LOGIN");
                 _userData = json.encode({
                   'userId': _user.uid,
@@ -135,6 +155,8 @@ class AuthProvider with ChangeNotifier {
                   'phoneNo': element.data['phoneNo'],
                   'password': element.data['password'],
                   'cityName': element.data['cityname'],
+                  'fcmToken': element.data['fcmToken'],
+                  'isActive': element.data['isActive'],
                 });
               }));
       notifyListeners();
@@ -180,7 +202,8 @@ class AuthProvider with ChangeNotifier {
     _phonenumber = extractedData['phoneNo'];
     _email = extractedData['email'];
     _cityName = extractedData['cityName'];
-
+    _firebaseToken = extractedData['fcmToken'];
+    _isActive = extractedData['isActive'];
     notifyListeners();
     return true;
   }
@@ -190,6 +213,8 @@ class AuthProvider with ChangeNotifier {
     _email = null;
     _phonenumber = null;
     _username = null;
+    _firebaseToken = null;
+    _isActive = null;
     _auth.signOut();
     notifyListeners();
     await SharedPref.init();

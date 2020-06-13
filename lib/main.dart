@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_driver_uber_app/provider/home_provider.dart';
 import 'package:flutter_driver_uber_app/screens/auth_screen.dart';
 import 'package:flutter_driver_uber_app/screens/homescreen.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ class Settings extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: AuthProvider()),
+        ChangeNotifierProvider.value(value: HomeProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (ctx, auth, _) => MaterialApp(
@@ -60,3 +62,6 @@ class Settings extends StatelessWidget {
     );
   }
 }
+
+
+
